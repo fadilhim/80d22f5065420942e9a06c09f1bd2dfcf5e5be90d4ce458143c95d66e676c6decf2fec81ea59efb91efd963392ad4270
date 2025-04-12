@@ -18,11 +18,15 @@ export const useJokes = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const loadJokesFromDb = useCallback(async () => {
+  const loadJokesFromDb = useCallback(async (processedCategories: CategoryWithJokes[] = []) => {
     try {
-      const dbCategories = await SQLiteService.getAllCategories();
+      // Use the processed categories if provided, otherwise fetch all categories from DB
+      const categoriesToProcess = processedCategories.length > 0
+        ? processedCategories
+        : await SQLiteService.getAllCategories();
+
       const categoriesData: CategoryWithJokes[] = await Promise.all(
-        dbCategories.map(async category => {
+        categoriesToProcess.map(async category => {
           const jokes = await SQLiteService.getJokesByCategory(category);
           return {
             name: category.name,
@@ -32,6 +36,7 @@ export const useJokes = () => {
           };
         }),
       );
+
       setCategoryJokes(categoriesData);
     } catch (err) {
       console.error('Error loading jokes from DB:', err);
@@ -127,7 +132,7 @@ export const useJokes = () => {
         if (newJokes.length > 0) {
           await SQLiteService.saveJokes(newJokes, true);
 
-          await loadJokesFromDb();
+          await loadJokesFromDb(categoryJokes);
         }
       } catch (err) {
         console.error('Error adding more jokes:', err);
@@ -137,6 +142,16 @@ export const useJokes = () => {
       }
     },
     [categoryJokes, loadJokesFromDb],
+  );
+
+  const moveToTop = useCallback(
+    (category: CategoryWithJokes) => {
+      setCategoryJokes(prevCategories => {
+        const otherCategories = prevCategories.filter(c => c.name !== category.name);
+        return [category, ...otherCategories];
+      });
+    },
+    [setCategoryJokes]
   );
 
   // Load jokes on initial mount
@@ -163,5 +178,6 @@ export const useJokes = () => {
     refreshing,
     refreshJokes,
     addMoreJoke,
+    moveToTop,
   };
 };

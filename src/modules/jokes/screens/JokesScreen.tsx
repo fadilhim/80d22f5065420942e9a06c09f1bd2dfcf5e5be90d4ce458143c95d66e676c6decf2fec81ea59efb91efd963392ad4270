@@ -13,13 +13,9 @@ import { useJokes } from '../../../hooks/useJokes';
 import styles from './JokesScreenStyle';
 
 const JokesScreen = () => {
-  const { categories, loading, refreshing, refreshJokes, addMoreJoke } = useJokes();
+  const { categories, loading, refreshing, refreshJokes, addMoreJoke, moveToTop } = useJokes();
   const scrollRef = useRef<ScrollView>(null);
   const [expandedAccordions, setExpandedAccordions] = useState<Record<string, boolean>>({});
-
-  const scrollToTop = () => {
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-  };
 
   const handleRefresh = useCallback(async () => {
     await refreshJokes();
@@ -51,7 +47,7 @@ const JokesScreen = () => {
             number={index + 1}
             title={(category.alias || category.name)}
             isFirst={index === 0}
-            onGoToTop={scrollToTop}
+            onGoToTop={() => moveToTop(category)}
             expanded={expandedAccordions[category.name] || false}
             onToggle={(isExpanded) => handleAccordionToggle(category.name, isExpanded)}
           >
